@@ -1670,7 +1670,7 @@
     <canvas id="fireworksCanvas"></canvas>
 
     <!-- ============================================================ -->
-    <!-- JAVASCRIPT – FIXED: Server-authoritative timer, proper betting -->
+    <!-- JAVASCRIPT – UPDATED FIREBASE CONFIG                         -->
     <!-- ============================================================ -->
     <script>
         // ============================================================
@@ -1932,17 +1932,16 @@
         }
 
         // ============================================================
-        //  FIREBASE CONFIG – my-new-75070
+        //  FIREBASE CONFIG – UPDATED TO dozen-3a487
         // ============================================================
         const firebaseConfig = {
-            apiKey: "AIzaSyC-qArFJ34ovhxrXkffnItYKOk4Vmm6Gj4",
-            authDomain: "my-new-75070.firebaseapp.com",
-            databaseURL: "https://my-new-75070-default-rtdb.firebaseio.com",
-            projectId: "my-new-75070",
-            storageBucket: "my-new-75070.firebasestorage.app",
-            messagingSenderId: "1082839881644",
-            appId: "1:1082839881644:web:cec54e128f23672260cc09",
-            measurementId: "G-7RR68QMFVK"
+            apiKey: "AIzaSyArSOgcdxaO8L93p4hW13kgfHjkeRcL8fM",
+            authDomain: "dozen-3a487.firebaseapp.com",
+            databaseURL: "https://dozen-3a487-default-rtdb.firebaseio.com",
+            projectId: "dozen-3a487",
+            storageBucket: "dozen-3a487.firebasestorage.app",
+            messagingSenderId: "544933994338",
+            appId: "1:544933994338:web:006f369fee7f14e033d63b"
         };
 
         let firebaseAvailable = false;
@@ -1957,7 +1956,7 @@
             database = firebase.database();
             firebaseAvailable = true;
             isMultiplayer = true;
-            console.log('✅ Firebase ready (my-new-75070)');
+            console.log('✅ Firebase ready (dozen-3a487)');
         } catch (e) {
             console.warn('⚠️ Firebase init error:', e);
             firebaseAvailable = false;
@@ -2564,7 +2563,7 @@
         }
 
         // ============================================================
-        //  BET DEDUCTION & REFUND (Now atomic with Firebase)
+        //  BET DEDUCTION & REFUND
         // ============================================================
         function deductBetFromPlay(username, betAmount) {
             if (!username) return false;
@@ -2575,16 +2574,10 @@
                     if (play >= betAmount) {
                         current.playWallet = play - betAmount;
                     } else {
-                        return undefined; // Abort if insufficient
+                        return undefined;
                     }
                 }
                 return current;
-            }, (error, committed) => {
-                if (error) {
-                    handleError(error, 'Deduct bet');
-                } else if (committed) {
-                    console.log(`✅ Bet ${betAmount} deducted from ${username}`);
-                }
             });
             return true;
         }
@@ -2602,7 +2595,7 @@
         }
 
         // ============================================================
-        //  UPDATE BETS FOR ROOM – Only for current round
+        //  UPDATE BETS FOR ROOM
         // ============================================================
         function updateBetsForRoom() {
             if (!gameRef || !currentUser) return;
@@ -2613,7 +2606,6 @@
                 const players = engineState.players;
                 const playerNames = Object.keys(players);
                 
-                // Only players with a pick in the current round
                 const playersWithPick = playerNames.filter(name => {
                     const player = players[name];
                     return player?.pick !== null && player?.round === engineState.roundNumber;
@@ -2622,7 +2614,6 @@
                 const takenCount = playersWithPick.length;
                 const shouldDeduct = takenCount >= 2;
 
-                // Update pot amount
                 engineState.totalBetsPlaced = playersWithPick.length;
                 engineState.potAmount = playersWithPick.length * currentBet;
 
@@ -2643,7 +2634,6 @@
                     gameRef.update(updates);
                 }
                 
-                // Update prize display
                 updatePrizeDisplay();
             } finally {
                 syncInProgress = false;
@@ -2651,7 +2641,7 @@
         }
 
         // ============================================================
-        //  UPDATE PRIZE DISPLAY – Shows actual pot
+        //  UPDATE PRIZE DISPLAY
         // ============================================================
         function updatePrizeDisplay() {
             const playersWithPick = Object.keys(engineState.players).filter(name => {
@@ -2661,7 +2651,6 @@
             const takenCount = playersWithPick.length;
             
             if (engineState.gamePhase === 'selection') {
-                // Show potential prize if spin happens now
                 if (takenCount >= 2) {
                     const prize = Math.floor(currentBet * takenCount * 0.85);
                     prizeDisplay.textContent = prize;
@@ -2669,7 +2658,6 @@
                     prizeDisplay.textContent = '0';
                 }
             } else {
-                // During/after spin, show actual prize
                 if (takenCount >= 2) {
                     const prize = Math.floor(currentBet * takenCount * 0.85);
                     prizeDisplay.textContent = prize;
@@ -2742,7 +2730,7 @@
         }
 
         // ============================================================
-        //  SYNC GAME STATE – Only current round picks considered
+        //  SYNC GAME STATE
         // ============================================================
         function syncGameState(data) {
             if (syncInProgress) return;
@@ -2834,7 +2822,6 @@
                 }
 
                 if (engineState.gamePhase === 'selection' && engineState.timer <= 0 && engineState.activePlayersCount < 2) {
-                    // Reset timer if less than 2 players (keep waiting)
                     gameRef.child('timer').transaction(current => {
                         if (current === null || current === undefined || typeof current !== 'number') {
                             return 30;
@@ -2872,7 +2859,7 @@
         };
 
         // ============================================================
-        //  TIMER – Server-authoritative (syncs from Firebase)
+        //  TIMER – Server-authoritative
         // ============================================================
         function startTimer() {
             if (timerInterval) {
@@ -2884,12 +2871,7 @@
             if (!gameRef) return;
 
             isTimerRunning = true;
-
-            // Display the current timer value from Firebase
             timerDisplay.textContent = engineState.timer;
-
-            // We no longer decrement locally - we rely on Firebase updates
-            // Just listen for changes via the sync
         }
 
         function stopTimer() {
@@ -2900,10 +2882,8 @@
             isTimerRunning = false;
         }
 
-        // The timer is now fully server-authoritative via syncGameState
-
         // ============================================================
-        //  RESULTS COUNTDOWN – also clears round numbers
+        //  RESULTS COUNTDOWN
         // ============================================================
         function startResultsCountdown() {
             if (isResultsCountdownRunning) return;
@@ -3037,7 +3017,7 @@
         }
 
         // ============================================================
-        //  NUMBER PICKER – stores round number & deducts bet immediately
+        //  NUMBER PICKER
         // ============================================================
         function renderNumberPicker() {
             if (!currentUser) return;
@@ -3119,10 +3099,8 @@
             updatePickStatus();
             if (newPick !== null) {
                 updateStatus(`✅ ${currentUser} picked ${newPick} for ${bet} Birr!`);
-                // Bet will be deducted by updateBetsForRoom when sync runs
             } else {
                 updateStatus(`↩️ ${currentUser} unselected their number.`);
-                // Refund will be handled by updateBetsForRoom
             }
         });
 
@@ -3173,7 +3151,7 @@
         }
 
         // ============================================================
-        //  SPIN EXECUTION – Proper betting logic
+        //  SPIN EXECUTION
         // ============================================================
         function executeSpin() {
             if (engineState.isSpinning) {
@@ -3214,10 +3192,9 @@
 
                 engineState.cumulativeRotation = extraDegrees;
 
-                // Calculate pot (all bets are already deducted)
                 const totalPlayers = numbers.length;
                 const totalPot = totalPlayers * currentBet;
-                const prizePool = Math.floor(totalPot * 0.85); // 15% fee
+                const prizePool = Math.floor(totalPot * 0.85);
 
                 gameRef.update({
                     cumulativeRotation: extraDegrees,
@@ -3232,7 +3209,6 @@
                 }
 
                 spinTimeout = setTimeout(() => {
-                    // Normal round (2+ players)
                     engineState.drawnNumbers.push(winningNumber);
                     engineState.spinCount++;
 
@@ -3275,7 +3251,7 @@
         }
 
         // ============================================================
-        //  WINNERS – Proper payout logic
+        //  WINNERS
         // ============================================================
         function checkAndAnnounceWinners(prizePool) {
             try {
@@ -3296,7 +3272,6 @@
                 
                 gameRef.update({ winners: winners });
                 
-                // Calculate win amount - split prize pool among winners
                 const winAmount = winners.length > 0 ? Math.floor(prizePool / winners.length) : 0;
                 
                 winners.forEach(name => {
@@ -3349,7 +3324,7 @@
         }
 
         // ============================================================
-        //  CREDIT WINNINGS – Credit to MAIN wallet (not play)
+        //  CREDIT WINNINGS
         // ============================================================
         function creditWinningsToMain(winAmount) {
             if (!currentUser) return false;
